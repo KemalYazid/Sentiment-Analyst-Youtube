@@ -771,7 +771,7 @@ elif "Prediksi" in menu:
         predict_btn = st.button("🔍  Analisis Sentimen", use_container_width=True)
 
     with col_result:
-        if predict_btn and review.strip():
+        if review.strip():
             vector     = tfidf.transform([review])
             pred       = model.predict(vector)[0]
             prob       = model.predict_proba(vector)[0]
