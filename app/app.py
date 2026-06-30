@@ -432,7 +432,7 @@ negatif    = int((df['sentiment'] == 0).sum())
 pct_pos    = positif / total * 100
 pct_neg    = negatif / total * 100
 
-CM = np.array([[204, 328], [60, 1408]])
+CM = np.array([[1377, 208], [324, 4091]])
 dash_acc = (CM[0,0] + CM[1,1]) / CM.sum() * 100
 
 # ══════════════════════════════════════════════
@@ -583,7 +583,7 @@ elif "WordCloud" in menu:
 
     tab1, tab2 = st.tabs(["👍  Komentar Positif", "👎  Komentar Negatif"])
 
-    def make_wordcloud(text, colormap, bg="#ffffff"):
+    def make_wordcloud(freqs, colormap, bg="#ffffff"):
         wc = WordCloud(
             width=1000,
             height=420,
@@ -591,14 +591,19 @@ elif "WordCloud" in menu:
             colormap=colormap,
             max_words=120,
             prefer_horizontal=0.85,
-            collocations=False,
             margin=8
-        ).generate(text)
+        ).generate_from_frequencies(freqs)
         return wc
 
+    feature_names = tfidf.get_feature_names_out()
+    pos_freqs_array = model.feature_count_[1]
+    neg_freqs_array = model.feature_count_[0]
+    
+    pos_freqs = {feature_names[i]: pos_freqs_array[i] for i in range(len(feature_names)) if pos_freqs_array[i] > 0}
+    neg_freqs = {feature_names[i]: neg_freqs_array[i] for i in range(len(feature_names)) if neg_freqs_array[i] > 0}
+
     with tab1:
-        positive_text = " ".join(df[df['sentiment'] == 1]['content'].dropna())
-        wc = make_wordcloud(positive_text, "Greens")
+        wc = make_wordcloud(pos_freqs, "Greens")
         fig, ax = plt.subplots(figsize=(12, 5))
         ax.imshow(wc, interpolation='bilinear')
         ax.axis("off")
@@ -607,14 +612,13 @@ elif "WordCloud" in menu:
         st.pyplot(fig)
 
         # Top words
-        words = positive_text.lower().split()
-        top_words = Counter(words).most_common(10)
+        top_words = sorted(pos_freqs.items(), key=lambda x: x[1], reverse=True)[:10]
         st.markdown('<div class="section-title">Top 10 Kata — Positif</div>', unsafe_allow_html=True)
         tw_df = pd.DataFrame(top_words, columns=["Kata", "Frekuensi"])
 
         fig2, ax2 = plt.subplots(figsize=(8, 3))
         ax2.barh(tw_df["Kata"][::-1], tw_df["Frekuensi"][::-1], color="#2ba640", edgecolor="none")
-        ax2.set_xlabel("Frekuensi", fontsize=10)
+        ax2.set_xlabel("Frekuensi (TF-IDF)", fontsize=10)
         ax2.xaxis.grid(True)
         ax2.set_axisbelow(True)
         ax2.spines[['top','right','bottom']].set_visible(False)
@@ -622,8 +626,7 @@ elif "WordCloud" in menu:
         st.pyplot(fig2)
 
     with tab2:
-        negative_text = " ".join(df[df['sentiment'] == 0]['content'].dropna())
-        wc = make_wordcloud(negative_text, "Reds")
+        wc = make_wordcloud(neg_freqs, "Reds")
         fig, ax = plt.subplots(figsize=(12, 5))
         ax.imshow(wc, interpolation='bilinear')
         ax.axis("off")
@@ -631,14 +634,14 @@ elif "WordCloud" in menu:
         fig.tight_layout(pad=0)
         st.pyplot(fig)
 
-        words = negative_text.lower().split()
-        top_words = Counter(words).most_common(10)
+        # Top words
+        top_words = sorted(neg_freqs.items(), key=lambda x: x[1], reverse=True)[:10]
         st.markdown('<div class="section-title">Top 10 Kata — Negatif</div>', unsafe_allow_html=True)
         tw_df = pd.DataFrame(top_words, columns=["Kata", "Frekuensi"])
 
         fig2, ax2 = plt.subplots(figsize=(8, 3))
         ax2.barh(tw_df["Kata"][::-1], tw_df["Frekuensi"][::-1], color="#ff0000", edgecolor="none")
-        ax2.set_xlabel("Frekuensi", fontsize=10)
+        ax2.set_xlabel("Frekuensi (TF-IDF)", fontsize=10)
         ax2.xaxis.grid(True)
         ax2.set_axisbelow(True)
         ax2.spines[['top','right','bottom']].set_visible(False)
@@ -773,7 +776,7 @@ elif "Prediksi" in menu:
             if st.button(ex[:45] + "…" if len(ex) > 45 else ex, key=ex):
                 review = ex
 
-        predict_btn = st.button("🔍  Analisis Sentimen", use_container_width=True)
+        predict_btn = st.button("🔍  Analisis Sentimen", width='stretch')
 
     with col_result:
         if review.strip():
