@@ -780,7 +780,12 @@ elif "Prediksi" in menu:
 
     with col_result:
         if review.strip():
-            vector     = tfidf.transform([review])
+            from preprocess import cleaningText, casefoldingText, fix_slangwords
+            clean_rev = cleaningText(review)
+            clean_rev = casefoldingText(clean_rev)
+            clean_rev = fix_slangwords(clean_rev)
+            
+            vector     = tfidf.transform([clean_rev])
             pred       = model.predict(vector)[0]
             prob       = model.predict_proba(vector)[0]
             confidence = max(prob) * 100
