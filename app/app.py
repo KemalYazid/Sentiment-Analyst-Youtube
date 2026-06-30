@@ -851,7 +851,7 @@ elif "Dataset" in menu:
 
     c1, c2, c3 = st.columns([2, 1, 1])
     with c1:
-        search_term = st.text_input("🔍 Cari kata dalam komentar", placeholder="Ketik kata kunci…")
+        search_term = st.text_area("🔍 Cari kata dalam komentar", placeholder="Ketik kata kunci (tekan Ctrl+Enter untuk mencari)…", height=68)
     with c2:
         pilihan = st.selectbox("Filter Sentimen", ["Semua", "Positif 👍", "Negatif 👎"])
     with c3:
