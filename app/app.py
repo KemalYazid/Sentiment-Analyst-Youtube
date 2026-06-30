@@ -432,7 +432,8 @@ negatif    = int((df['sentiment'] == 0).sum())
 pct_pos    = positif / total * 100
 pct_neg    = negatif / total * 100
 
-CM = np.array([[1377, 208], [324, 4091]])
+CM = np.array([[204, 328], [60, 1408]])
+dash_acc = (CM[0,0] + CM[1,1]) / CM.sum() * 100
 
 # ══════════════════════════════════════════════
 #  PAGE: DASHBOARD
@@ -453,7 +454,7 @@ if "Dashboard" in menu:
         (c1, "📊", f"{total:,}", "Total Komentar", "#0f0f0f"),
         (c2, "👍", f"{positif:,}", "Sentimen Positif", "#2ba640"),
         (c3, "👎", f"{negatif:,}", "Sentimen Negatif", "#ff0000"),
-        (c4, "🎯", "91.13%", "Akurasi Model", "#3ea6ff"),
+        (c4, "🎯", f"{dash_acc:.2f}%", "Akurasi Model", "#3ea6ff"),
     ]
 
     for col, icon, value, label, color in cards:
@@ -705,21 +706,21 @@ elif "Evaluasi" in menu:
         st.pyplot(fig)
 
     with col_report:
-        st.markdown("""
+        st.markdown(f"""
         <div class="insight-box" style="border-left-color:#2ba640">
-            <strong>True Positive (TP)</strong> — 4,091<br>
+            <strong>True Positive (TP)</strong> — {TP:,}<br>
             Komentar positif yang diprediksi benar sebagai positif.
         </div>
         <div class="insight-box" style="border-left-color:#0f0f0f">
-            <strong>True Negative (TN)</strong> — 1,377<br>
+            <strong>True Negative (TN)</strong> — {TN:,}<br>
             Komentar negatif yang diprediksi benar sebagai negatif.
         </div>
         <div class="insight-box" style="border-left-color:#ff0000">
-            <strong>False Positive (FP)</strong> — 208<br>
+            <strong>False Positive (FP)</strong> — {FP:,}<br>
             Komentar negatif yang keliru diprediksi sebagai positif.
         </div>
         <div class="insight-box" style="border-left-color:#ff0000">
-            <strong>False Negative (FN)</strong> — 324<br>
+            <strong>False Negative (FN)</strong> — {FN:,}<br>
             Komentar positif yang keliru diprediksi sebagai negatif.
         </div>
         """, unsafe_allow_html=True)
@@ -727,11 +728,15 @@ elif "Evaluasi" in menu:
     # Classification report per class
     st.markdown('<div class="section-title">Laporan Per Kelas</div>', unsafe_allow_html=True)
 
+    precision_0 = TN / (TN + FN)
+    recall_0 = TN / (TN + FP)
+    f1_0 = 2 * precision_0 * recall_0 / (precision_0 + recall_0)
+
     report_data = {
         "Kelas":     ["Negatif (0)", "Positif (1)"],
-        "Precision": [f"{TN/(TN+FN)*100:.1f}%", f"{precision*100:.1f}%"],
-        "Recall":    [f"{TN/(TN+FP)*100:.1f}%",  f"{recall*100:.1f}%"],
-        "F1-Score":  ["—", f"{f1*100:.1f}%"],
+        "Precision": [f"{precision_0*100:.1f}%", f"{precision*100:.1f}%"],
+        "Recall":    [f"{recall_0*100:.1f}%",  f"{recall*100:.1f}%"],
+        "F1-Score":  [f"{f1_0*100:.1f}%", f"{f1*100:.1f}%"],
         "Support":   [TN+FP, TP+FN],
     }
     st.dataframe(pd.DataFrame(report_data), hide_index=True)
@@ -917,7 +922,7 @@ elif "Tentang" in menu:
             <h3>📊 Dataset</h3>
             <ul>
                 <li>Sumber: API YouTube / Web Scraping</li>
-                <li>Total: <strong style="color:#0f0f0f">30.000 komentar</strong></li>
+                <li>Total: <strong style="color:#0f0f0f">{total:,} komentar</strong></li>
                 <li>Label: Positif & Negatif</li>
                 <li>Metode labeling: Semi-otomatis + verifikasi manual</li>
             </ul>
@@ -941,14 +946,21 @@ elif "Tentang" in menu:
         """, unsafe_allow_html=True)
 
     with c4:
-        st.markdown("""
+        TP_t, FN_t = CM[1][1], CM[1][0]
+        FP_t, TN_t = CM[0][1], CM[0][0]
+        accuracy_t  = (TP_t + TN_t) / CM.sum()
+        precision_t = TP_t / (TP_t + FP_t)
+        recall_t    = TP_t / (TP_t + FN_t)
+        f1_t        = 2 * precision_t * recall_t / (precision_t + recall_t)
+        
+        st.markdown(f"""
         <div class="about-card">
             <h3>📈 Hasil Evaluasi</h3>
             <ul>
-                <li>Accuracy: <strong style="color:#3ea6ff">91.13%</strong></li>
-                <li>Precision: <strong style="color:#2ba640">95.2%</strong></li>
-                <li>Recall: <strong style="color:#f5a623">92.7%</strong></li>
-                <li>F1-Score: <strong style="color:#c47aff">93.9%</strong></li>
+                <li>Accuracy: <strong style="color:#3ea6ff">{accuracy_t*100:.2f}%</strong></li>
+                <li>Precision: <strong style="color:#2ba640">{precision_t*100:.2f}%</strong></li>
+                <li>Recall: <strong style="color:#f5a623">{recall_t*100:.2f}%</strong></li>
+                <li>F1-Score: <strong style="color:#c47aff">{f1_t*100:.2f}%</strong></li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
